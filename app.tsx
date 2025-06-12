@@ -2,7 +2,6 @@
 
 import type React from "react";
 import { useState, useMemo, useEffect } from "react";
-import { sampleItems } from "./components/circle-data";
 import FigmaCanvas from "./components/figma-canvas";
 import EnhancedFilterPanel from "./components/enhanced-filter-panel";
 import BubbleDetailModal from "./components/bubble-detail-modal";
@@ -17,10 +16,6 @@ const App: React.FC = () => {
     { initialNumItems: 5 }
   );
 
-  useEffect(() => {
-    console.log(results);
-  }, [results]);
-
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
     new Set()
   );
@@ -30,19 +25,30 @@ const App: React.FC = () => {
   const [selectedSentiments, setSelectedSentiments] = useState<string[]>([]);
   const [selectedBubble, setSelectedBubble] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (results.length > 0 && selectedCategories.size === 0) {
+      if (selectedCategories.size === 0) return;
+      const allCategories = new Set(
+        results.map((item) => item.analysis?.[1].body.category)
+      );
+      setSelectedCategories(allCategories);
+    }
+  }, [results, selectedCategories]);
+
   // Apply all filters EXCEPT category filter for display purposes
   const filteredItemsForDisplay = useMemo(() => {
-    let filtered = sampleItems;
+    let filtered = results;
 
     // Content search filter
     if (contentSearchTerm.trim()) {
       const searchLower = contentSearchTerm.toLowerCase();
       filtered = filtered.filter(
         (item) =>
-          item.name.toLowerCase().includes(searchLower) ||
-          item.content?.toLowerCase().includes(searchLower) ||
-          item.keywords?.some((keyword) =>
+          item.analysis?.[1].body.keywords?.some((keyword: string) =>
             keyword.toLowerCase().includes(searchLower)
+          ) ||
+          item.analysis?.[0].body?.some((chat: { message: string }) =>
+            chat.message.toLowerCase().includes(searchLower)
           )
       );
     }
@@ -50,8 +56,8 @@ const App: React.FC = () => {
     // Date range filter
     if (dateRange.start || dateRange.end) {
       filtered = filtered.filter((item) => {
-        if (!item.date) return false;
-        const itemDate = new Date(item.date);
+        if (!item.created_at) return false;
+        const itemDate = new Date(item.created_at);
         const startDate = dateRange.start
           ? new Date(dateRange.start)
           : new Date("1900-01-01");
@@ -65,20 +71,20 @@ const App: React.FC = () => {
     // Sentiment filter
     if (selectedSentiments.length > 0) {
       filtered = filtered.filter(
-        (item) => item.sentiment && selectedSentiments.includes(item.sentiment)
+        (item) =>
+          item.analysis?.[1].body.sentiment &&
+          selectedSentiments.includes(item.analysis?.[1].body.sentiment.type)
       );
     }
 
     return filtered;
-  }, [contentSearchTerm, dateRange, selectedSentiments]);
+  }, [contentSearchTerm, dateRange, selectedSentiments, results]);
 
   // Apply category filter only for bubble visualization
   const filteredItemsForBubbles = useMemo(() => {
-    if (selectedCategories.size === 0) {
-      return filteredItemsForDisplay; // Show all if none selected
-    }
+    if (selectedCategories.size === 0) return []; // show nothing if none selected
     return filteredItemsForDisplay.filter((item) =>
-      selectedCategories.has(item.category)
+      selectedCategories.has(item.analysis?.[1].body.category)
     );
   }, [filteredItemsForDisplay, selectedCategories]);
 
@@ -86,15 +92,22 @@ const App: React.FC = () => {
   const categoryData = useMemo(() => {
     const categoryCounts = filteredItemsForDisplay.reduce(
       (acc, item) => {
-        if (!acc[item.category]) {
-          acc[item.category] = {
+        if (!acc[item.analysis?.[1].body.category]) {
+          acc[item.analysis?.[1].body.category] = {
             count: 0,
             sentiment: { positive: 0, neutral: 0, negative: 0 },
           };
         }
-        acc[item.category].count++;
-        if (item.sentiment) {
-          acc[item.category].sentiment[item.sentiment]++;
+        type sentimentKey = keyof {
+          positive: number;
+          neutral: number;
+          negative: number;
+        };
+        acc[item.analysis?.[1].body.category].count++;
+        if (item.analysis?.[1].body.sentiment) {
+          acc[item.analysis?.[1].body.category].sentiment[
+            item.analysis?.[1].body.sentiment as sentimentKey
+          ]++;
         }
         return acc;
       },
@@ -109,7 +122,7 @@ const App: React.FC = () => {
 
     // Always include all categories that exist in the original data
     const allCategories = [
-      ...new Set(sampleItems.map((item) => item.category)),
+      ...new Set(results.map((item) => item.analysis?.[1].body.category)),
     ];
 
     return allCategories.map((category) => {
@@ -120,33 +133,38 @@ const App: React.FC = () => {
       return {
         category,
         count: data.count,
-        isSelected:
-          selectedCategories.size === 0 || selectedCategories.has(category),
+        isSelected: selectedCategories.has(category),
         sentiment: data.sentiment,
       };
     });
-  }, [filteredItemsForDisplay, selectedCategories]);
+  }, [results, filteredItemsForDisplay, selectedCategories]);
 
   // Get detailed data for selected bubble
   const bubbleDetailData = useMemo(() => {
     if (!selectedBubble) return null;
 
     const categoryItems = filteredItemsForDisplay.filter(
-      (item) => item.category === selectedBubble
+      (item) => item.analysis?.[1].body.category === selectedBubble
     );
     const totalDuration = categoryItems.reduce(
-      (sum, item) => sum + (item.duration || 0),
+      (sum, item) => sum + (item.analysis?.[1].body.interaction_duration || 0),
       0
     );
     const totalParticipants = categoryItems.reduce(
-      (sum, item) => sum + (item.participants || 0),
+      (sum, item) =>
+        sum + (item.analysis?.[1].body.number_of_participants || 0),
       0
     );
 
     const sentimentBreakdown = categoryItems.reduce(
       (acc, item) => {
-        if (item.sentiment) {
-          acc[item.sentiment]++;
+        type sentimentKey = keyof {
+          positive: number;
+          neutral: number;
+          negative: number;
+        };
+        if (item.analysis?.[1].body.sentiment) {
+          acc[item.analysis?.[1].body.sentiment.type as sentimentKey]++;
         }
         return acc;
       },
@@ -154,15 +172,12 @@ const App: React.FC = () => {
     );
 
     // Get top keywords
-    const keywordCounts = categoryItems.reduce(
-      (acc, item) => {
-        item.keywords?.forEach((keyword) => {
-          acc[keyword] = (acc[keyword] || 0) + 1;
-        });
-        return acc;
-      },
-      {} as Record<string, number>
-    );
+    const keywordCounts = categoryItems.reduce((acc, item) => {
+      item.analysis?.[1].body.keywords?.forEach((keyword: string) => {
+        acc[keyword] = (acc[keyword] || 0) + 1;
+      });
+      return acc;
+    }, {} as Record<string, number>);
 
     const topKeywords = Object.entries(keywordCounts)
       .sort((a, b) => b[1] - a[1])
@@ -171,8 +186,11 @@ const App: React.FC = () => {
 
     // Get recent items (sorted by date)
     const recentItems = categoryItems
-      .filter((item) => item.date)
-      .sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime())
+      .filter((item) => item.created_at)
+      .sort(
+        (a, b) =>
+          new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime()
+      )
       .slice(0, 5);
 
     return {
@@ -192,16 +210,18 @@ const App: React.FC = () => {
       topKeywords,
       recentItems,
     };
-  }, [selectedBubble, filteredItemsForDisplay]);
+  }, [selectedBubble, filteredItemsForDisplay, results]);
 
   const handleCategoryToggle = (category: string) => {
     const newSelected = new Set(selectedCategories);
+
     if (newSelected.has(category)) {
       newSelected.delete(category);
     } else {
       newSelected.add(category);
     }
-    setSelectedCategories(newSelected);
+
+    setSelectedCategories(new Set(newSelected));
   };
 
   const handleResetFilters = () => {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchMutation } from "convex/nextjs";
-import { api } from "../../../convex/_generated/api";
+import { api } from "@/convex/_generated/api";
 
 export async function POST(request: Request) {
   const vcon = await request.json();

@@ -10,10 +10,7 @@ export default defineSchema({
       v.object({
         alg: v.string(),
         url: v.string(),
-        meta: v.object({
-          direction: v.string(),
-          disposition: v.string(),
-        }),
+        meta: v.object({ direction: v.string(), disposition: v.string() }),
         type: v.string(),
         start: v.string(),
         parties: v.array(v.number()),
@@ -34,11 +31,7 @@ export default defineSchema({
     ),
     attachments: v.optional(
       v.array(
-        v.object({
-          type: v.string(),
-          encoding: v.string(),
-          body: v.any(),
-        })
+        v.object({ type: v.string(), encoding: v.string(), body: v.any() })
       )
     ),
     analysis: v.optional(

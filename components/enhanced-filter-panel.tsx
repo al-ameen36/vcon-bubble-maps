@@ -1,36 +1,46 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useMemo } from "react"
+import type React from "react";
+import { useState, useMemo } from "react";
 
-import { Filter, X, RotateCcw, CheckSquare, Search, Calendar, Smile, Meh, Frown } from "lucide-react"
+import {
+  Filter,
+  X,
+  RotateCcw,
+  CheckSquare,
+  Search,
+  Calendar,
+  Smile,
+  Meh,
+  Frown,
+} from "lucide-react";
 
 interface CategoryData {
-  category: string
-  count: number
-  isSelected: boolean
+  category: string;
+  count: number;
+  isSelected: boolean;
   sentiment: {
-    positive: number
-    neutral: number
-    negative: number
-  }
+    positive: number;
+    neutral: number;
+    negative: number;
+  };
 }
 
 interface FilterPanelProps {
-  categoryData: CategoryData[]
-  isOpen: boolean
-  onToggleOpen: () => void
-  onCategoryToggle: (category: string) => void
-  onResetFilters: () => void
-  onSelectAll: () => void
-  selectedCount: number
-  totalCount: number
-  onContentSearch: (term: string) => void
-  onDateRangeChange: (startDate: string, endDate: string) => void
-  onSentimentFilter: (sentiments: string[]) => void
-  contentSearchTerm: string
-  dateRange: { start: string; end: string }
-  selectedSentiments: string[]
+  categoryData: CategoryData[];
+  isOpen: boolean;
+  onToggleOpen: () => void;
+  onCategoryToggle: (category: string) => void;
+  onResetFilters: () => void;
+  onSelectAll: () => void;
+  selectedCount: number;
+  totalCount: number;
+  onContentSearch: (term: string) => void;
+  onDateRangeChange: (startDate: string, endDate: string) => void;
+  onSentimentFilter: (sentiments: string[]) => void;
+  contentSearchTerm: string;
+  dateRange: { start: string; end: string };
+  selectedSentiments: string[];
 }
 
 const EnhancedFilterPanel: React.FC<FilterPanelProps> = ({
@@ -49,58 +59,61 @@ const EnhancedFilterPanel: React.FC<FilterPanelProps> = ({
   dateRange,
   selectedSentiments,
 }) => {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [localContentSearch, setLocalContentSearch] = useState(contentSearchTerm)
-  const [localDateRange, setLocalDateRange] = useState(dateRange)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [localContentSearch, setLocalContentSearch] =
+    useState(contentSearchTerm);
+  const [localDateRange, setLocalDateRange] = useState(dateRange);
 
   const filteredCategoryData = useMemo(() => {
-    if (!searchTerm.trim()) return categoryData
-    return categoryData.filter((item) => item.category.toLowerCase().includes(searchTerm.toLowerCase()))
-  }, [categoryData, searchTerm])
+    if (!searchTerm.trim()) return categoryData;
+    return categoryData.filter((item) =>
+      item.category.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [categoryData, searchTerm]);
 
   const handleContentSearchChange = (value: string) => {
-    setLocalContentSearch(value)
-    onContentSearch(value)
-  }
+    setLocalContentSearch(value);
+    onContentSearch(value);
+  };
 
   const handleDateRangeChange = (field: "start" | "end", value: string) => {
-    const newRange = { ...localDateRange, [field]: value }
-    setLocalDateRange(newRange)
-    onDateRangeChange(newRange.start, newRange.end)
-  }
+    const newRange = { ...localDateRange, [field]: value };
+    setLocalDateRange(newRange);
+    onDateRangeChange(newRange.start, newRange.end);
+  };
 
   const handleSentimentToggle = (sentiment: string) => {
     const newSentiments = selectedSentiments.includes(sentiment)
       ? selectedSentiments.filter((s) => s !== sentiment)
-      : [...selectedSentiments, sentiment]
-    onSentimentFilter(newSentiments)
-  }
+      : [...selectedSentiments, sentiment];
+    onSentimentFilter(newSentiments);
+  };
 
   const getSentimentIcon = (sentiment: string) => {
     switch (sentiment) {
       case "positive":
-        return <Smile size={14} className="text-green-500" />
+        return <Smile size={14} className="text-green-500" />;
       case "neutral":
-        return <Meh size={14} className="text-yellow-500" />
+        return <Meh size={14} className="text-yellow-500" />;
       case "negative":
-        return <Frown size={14} className="text-red-500" />
+        return <Frown size={14} className="text-red-500" />;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
       case "positive":
-        return "border-green-400 bg-green-50"
+        return "border-green-400 bg-green-50";
       case "neutral":
-        return "border-yellow-400 bg-yellow-50"
+        return "border-yellow-400 bg-yellow-50";
       case "negative":
-        return "border-red-400 bg-red-50"
+        return "border-red-400 bg-red-50";
       default:
-        return "border-gray-400 bg-gray-50"
+        return "border-gray-400 bg-gray-50";
     }
-  }
+  };
 
   return (
     <>
@@ -130,7 +143,9 @@ const EnhancedFilterPanel: React.FC<FilterPanelProps> = ({
         <div className="p-4 h-full flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-semibold text-lg">Advanced Filters</h3>
+            <h3 className="text-white font-semibold text-lg">
+              Advanced Filters
+            </h3>
             <button
               onClick={onToggleOpen}
               className="text-white/70 hover:text-white transition-colors"
@@ -142,9 +157,14 @@ const EnhancedFilterPanel: React.FC<FilterPanelProps> = ({
 
           {/* Content Search */}
           <div className="mb-4">
-            <label className="block text-white/80 text-sm font-medium mb-2">Search Content</label>
+            <label className="block text-white/80 text-sm font-medium mb-2">
+              Search Content
+            </label>
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60" />
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60"
+              />
               <input
                 type="text"
                 placeholder="Search in conversations..."
@@ -187,19 +207,25 @@ const EnhancedFilterPanel: React.FC<FilterPanelProps> = ({
 
           {/* Sentiment Filter */}
           <div className="mb-4">
-            <label className="block text-white/80 text-sm font-medium mb-2">Sentiment</label>
+            <label className="block text-white/80 text-sm font-medium mb-2">
+              Sentiment
+            </label>
             <div className="flex gap-2">
               {["positive", "neutral", "negative"].map((sentiment) => (
                 <button
                   key={sentiment}
                   onClick={() => handleSentimentToggle(sentiment)}
                   className={`flex-1 p-2 rounded-lg border-2 transition-all ${
-                    selectedSentiments.includes(sentiment) ? getSentimentColor(sentiment) : "border-white/20 bg-white/5"
+                    selectedSentiments.includes(sentiment)
+                      ? getSentimentColor(sentiment)
+                      : "border-white/20 bg-white/5"
                   }`}
                 >
                   <div className="flex items-center justify-center gap-1">
                     {getSentimentIcon(sentiment)}
-                    <span className="text-xs text-white capitalize">{sentiment}</span>
+                    <span className="text-xs text-white capitalize">
+                      {sentiment}
+                    </span>
                   </div>
                 </button>
               ))}
@@ -227,7 +253,10 @@ const EnhancedFilterPanel: React.FC<FilterPanelProps> = ({
           {/* Category Search */}
           <div className="mb-4">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60" />
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60"
+              />
               <input
                 type="text"
                 placeholder="Search categories..."
@@ -248,7 +277,7 @@ const EnhancedFilterPanel: React.FC<FilterPanelProps> = ({
 
           {/* Filter Status */}
           <div className="mb-4 text-white/80 text-sm">
-            {selectedCount === 0 ? (
+            {selectedCount === 0 || selectedCount === totalCount ? (
               <span>Showing all categories ({totalCount})</span>
             ) : (
               <span>
@@ -261,34 +290,33 @@ const EnhancedFilterPanel: React.FC<FilterPanelProps> = ({
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             <div className="space-y-2">
               {filteredCategoryData.length > 0 ? (
-                filteredCategoryData.map(({ category, count, isSelected, sentiment }) => (
-                  <label
-                    key={category}
-                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => onCategoryToggle(category)}
-                      className="w-4 h-4 text-blue-500 bg-white/20 border-white/30 rounded focus:ring-blue-500 focus:ring-2"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white font-medium truncate group-hover:text-blue-200 transition-colors">
-                        {category}
+                filteredCategoryData.map(
+                  ({ category, count, isSelected, sentiment }) => (
+                    <label
+                      key={category}
+                      className="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => onCategoryToggle(category)}
+                        className="w-4 h-4 text-blue-500 bg-white/20 border-white/30 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-medium truncate group-hover:text-blue-200 transition-colors">
+                          {category}
+                        </div>
+                        <div className="text-white/60 text-sm">
+                          {count} item{count !== 1 ? "s" : ""}
+                        </div>
                       </div>
-                      <div className="text-white/60 text-sm">
-                        {count} item{count !== 1 ? "s" : ""}
-                      </div>
-                      <div className="flex gap-1 mt-1">
-                        <span className="text-xs text-green-400">+{sentiment.positive}</span>
-                        <span className="text-xs text-yellow-400">~{sentiment.neutral}</span>
-                        <span className="text-xs text-red-400">-{sentiment.negative}</span>
-                      </div>
-                    </div>
-                  </label>
-                ))
+                    </label>
+                  )
+                )
               ) : (
-                <div className="text-white/60 text-center py-4">No categories found for "{searchTerm}"</div>
+                <div className="text-white/60 text-center py-4">
+                  No categories found for "{searchTerm}"
+                </div>
               )}
             </div>
           </div>
@@ -296,7 +324,12 @@ const EnhancedFilterPanel: React.FC<FilterPanelProps> = ({
       </div>
 
       {/* Backdrop */}
-      {isOpen && <div className="fixed inset-0 bg-black/20 z-30" onClick={onToggleOpen} />}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 z-30"
+          onClick={onToggleOpen}
+        />
+      )}
 
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
@@ -315,7 +348,7 @@ const EnhancedFilterPanel: React.FC<FilterPanelProps> = ({
         }
       `}</style>
     </>
-  )
-}
+  );
+};
 
-export default EnhancedFilterPanel
+export default EnhancedFilterPanel;

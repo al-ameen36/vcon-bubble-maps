@@ -118,32 +118,37 @@
             }
         },
         {
-            "interaction_duration": 82,
-            "number_of_participants": 2,
-            "number_of_messages": 12,
-            "sentiment": {
-                "type": "positive",
-                "score": 0.8,
-                "summary": "The customer was upset about an overcharge on their cafe order. The agent responded empathetically, identified a pricing error, and assured a refund within a clear timeframe. The conversation ended with the customer feeling heard and satisfied with the resolution."
-            },
-            "keywords": [
-                "pricing issue",
-                "refund",
-                "order number",
-                "Cornerstone Cafe",
-                "billing mistake",
-                "overcharged",
-                "business days"
-            ],
-            "issues_raised": [
-                "Customer reported being overcharged due to incorrect pricing on their order."
-            ],
-            "resolution_quality": {
-                "score": 0.88,
-                "message": "The agent quickly located the order error, apologized sincerely, and provided a clear timeline for the refund, ensuring the customer felt supported.",
-                "improvement": "Offering a small complimentary item or discount on the next purchase could further enhance customer goodwill."
-            },
-            "category": "Pricing Complaint"
+            "type": "json_analysis",
+            "vendor": "openai",
+            "encoding": "none",
+            "body": {
+                "interaction_duration": 82,
+                "number_of_participants": 2,
+                "number_of_messages": 12,
+                "sentiment": {
+                    "type": "positive",
+                    "score": 0.8,
+                    "summary": "The customer was upset about an overcharge on their cafe order. The agent responded empathetically, identified a pricing error, and assured a refund within a clear timeframe. The conversation ended with the customer feeling heard and satisfied with the resolution."
+                },
+                "keywords": [
+                    "pricing issue",
+                    "refund",
+                    "order number",
+                    "Cornerstone Cafe",
+                    "billing mistake",
+                    "overcharged",
+                    "business days"
+                ],
+                "issues_raised": [
+                    "Customer reported being overcharged due to incorrect pricing on their order."
+                ],
+                "resolution_quality": {
+                    "score": 0.88,
+                    "message": "The agent quickly located the order error, apologized sincerely, and provided a clear timeline for the refund, ensuring the customer felt supported.",
+                    "improvement": "Offering a small complimentary item or discount on the next purchase could further enhance customer goodwill."
+                },
+                "category": "Pricing Complaint"
+            }
         }
     ]
 }

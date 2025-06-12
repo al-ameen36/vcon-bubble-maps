@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useRef, useEffect } from "react"
+import type React from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   MessageCircle,
   X,
@@ -15,49 +15,48 @@ import {
   Info,
   Zap,
   ZapOff,
-} from "lucide-react"
-
-interface ItemData {
-  name: string
-  category: string
-  [key: string]: any
-}
+} from "lucide-react";
+import { Doc } from "@/convex/_generated/dataModel";
 
 interface Message {
-  id: string
-  type: "user" | "bot"
-  content: string
-  timestamp: Date
+  id: string;
+  type: "user" | "bot";
+  content: string;
+  timestamp: Date;
 }
 
 interface QuickQuestion {
-  id: string
-  text: string
-  question: string
-  icon: React.ReactNode
+  id: string;
+  text: string;
+  question: string;
+  icon: React.ReactNode;
 }
 
 interface ChatbotProps {
-  filteredItems: ItemData[]
-  selectedCategories: Set<string>
+  filteredItems: Doc<"vcons">[];
+  selectedCategories: Set<string>;
 }
 
-const Chatbot: React.FC<ChatbotProps> = ({ filteredItems, selectedCategories }) => {
-  const [isOpen, setIsOpen] = useState(false)
+const Chatbot: React.FC<ChatbotProps> = ({
+  filteredItems,
+  selectedCategories,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       type: "bot",
-      content: "Hi! I can help you analyze the items in your selected categories. Ask me anything about the data!",
+      content:
+        "Hi! I can help you analyze the items in your selected categories. Ask me anything about the data!",
       timestamp: new Date(),
     },
-  ])
-  const [inputValue, setInputValue] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
-  const [showQuickQuestions, setShowQuickQuestions] = useState(true)
-  const [hasUserSentMessage, setHasUserSentMessage] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  ]);
+  const [inputValue, setInputValue] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [showQuickQuestions, setShowQuickQuestions] = useState(true);
+  const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Define quick questions
   const quickQuestions: QuickQuestion[] = [
@@ -91,57 +90,59 @@ const Chatbot: React.FC<ChatbotProps> = ({ filteredItems, selectedCategories }) 
       question: "What can you help me with?",
       icon: <HelpCircle size={14} />,
     },
-  ]
+  ];
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
-      inputRef.current.focus()
+      inputRef.current.focus();
     }
-  }, [isOpen])
+  }, [isOpen]);
 
   // Auto-hide quick questions after user sends first message
   useEffect(() => {
     if (hasUserSentMessage && showQuickQuestions) {
       const timer = setTimeout(() => {
-        setShowQuickQuestions(false)
-      }, 500) // Small delay for smooth UX
-      return () => clearTimeout(timer)
+        setShowQuickQuestions(false);
+      }, 500); // Small delay for smooth UX
+      return () => clearTimeout(timer);
     }
-  }, [hasUserSentMessage, showQuickQuestions])
+  }, [hasUserSentMessage, showQuickQuestions]);
 
   const generateResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase()
-    const categories = Array.from(selectedCategories)
-    const totalItems = filteredItems.length
+    const lowerMessage = userMessage.toLowerCase();
+    const categories = Array.from(selectedCategories);
+    const totalItems = filteredItems.length;
 
     // Get category counts
-    const categoryCounts = filteredItems.reduce(
-      (acc, item) => {
-        acc[item.category] = (acc[item.category] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>,
-    )
+    const categoryCounts = filteredItems.reduce((acc, item) => {
+      acc[item.analysis?.[1].body.category] =
+        (acc[item.analysis?.[1].body.category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     // Simple response logic based on keywords
-    if (lowerMessage.includes("how many") || lowerMessage.includes("count") || lowerMessage.includes("total items")) {
+    if (
+      lowerMessage.includes("how many") ||
+      lowerMessage.includes("count") ||
+      lowerMessage.includes("total items")
+    ) {
       if (lowerMessage.includes("total")) {
         return `You currently have ${totalItems} items selected across ${
           selectedCategories.size === 0 ? "all" : selectedCategories.size
-        } categories.`
+        } categories.`;
       }
       const categoryBreakdown = Object.entries(categoryCounts)
         .map(([cat, count]) => `${cat}: ${count} items`)
-        .join(", ")
-      return `Here's the breakdown: ${categoryBreakdown}`
+        .join(", ");
+      return `Here's the breakdown: ${categoryBreakdown}`;
     }
 
     if (
@@ -150,10 +151,12 @@ const Chatbot: React.FC<ChatbotProps> = ({ filteredItems, selectedCategories }) 
       lowerMessage.includes("list all categories")
     ) {
       if (categories.length === 0) {
-        const allCategories = Object.keys(categoryCounts).join(", ")
-        return `All categories are currently selected: ${allCategories}`
+        const allCategories = Object.keys(categoryCounts).join(", ");
+        return `All categories are currently selected: ${allCategories}`;
       }
-      return `You're currently viewing: ${categories.join(", ")}. These categories contain ${totalItems} items total.`
+      return `You're currently viewing: ${categories.join(
+        ", "
+      )}. These categories contain ${totalItems} items total.`;
     }
 
     if (
@@ -161,36 +164,49 @@ const Chatbot: React.FC<ChatbotProps> = ({ filteredItems, selectedCategories }) 
       lowerMessage.includes("biggest") ||
       lowerMessage.includes("what's the largest category")
     ) {
-      const largest = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]
-      return largest ? `The largest category is "${largest[0]}" with ${largest[1]} items.` : "No categories selected."
+      const largest = Object.entries(categoryCounts).sort(
+        (a, b) => b[1] - a[1]
+      )[0];
+      return largest
+        ? `The largest category is "${largest[0]}" with ${largest[1]} items.`
+        : "No categories selected.";
     }
 
     if (lowerMessage.includes("smallest") || lowerMessage.includes("least")) {
-      const smallest = Object.entries(categoryCounts).sort((a, b) => a[1] - b[1])[0]
+      const smallest = Object.entries(categoryCounts).sort(
+        (a, b) => a[1] - b[1]
+      )[0];
       return smallest
         ? `The smallest category is "${smallest[0]}" with ${smallest[1]} items.`
-        : "No categories selected."
+        : "No categories selected.";
     }
 
     if (lowerMessage.includes("items") && lowerMessage.includes("in")) {
-      const categoryMatch = categories.find((cat) => lowerMessage.includes(cat.toLowerCase()))
+      const categoryMatch = categories.find((cat) =>
+        lowerMessage.includes(cat.toLowerCase())
+      );
       if (categoryMatch) {
-        const categoryItems = filteredItems.filter((item) => item.category === categoryMatch)
-        const itemNames = categoryItems.map((item) => item.name).join(", ")
-        return `Items in ${categoryMatch}: ${itemNames}`
+        const categoryItems = filteredItems.filter(
+          (item) => item.analysis?.[1].body.category === categoryMatch
+        );
+        const itemNames = categoryItems.join(", ");
+        return `Items in ${categoryMatch}: ${itemNames}`;
       }
     }
 
-    if (lowerMessage.includes("compare") || lowerMessage.includes("compare all categories")) {
-      const allCategories = Object.keys(categoryCounts)
+    if (
+      lowerMessage.includes("compare") ||
+      lowerMessage.includes("compare all categories")
+    ) {
+      const allCategories = Object.keys(categoryCounts);
       if (allCategories.length < 2) {
-        return "You need at least 2 categories to make comparisons."
+        return "You need at least 2 categories to make comparisons.";
       }
       const comparison = Object.entries(categoryCounts)
         .sort((a, b) => b[1] - a[1])
         .map(([cat, count]) => `${cat} (${count})`)
-        .join(" > ")
-      return `Category comparison by size: ${comparison}`
+        .join(" > ");
+      return `Category comparison by size: ${comparison}`;
     }
 
     if (lowerMessage.includes("help") || lowerMessage.includes("what can")) {
@@ -201,7 +217,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ filteredItems, selectedCategories }) 
 • Find largest/smallest categories
 • Analyze your current selection
 
-Try asking: "How many items are in Frontend?" or "Compare my categories"`
+Try asking: "How many items are in Frontend?" or "Compare my categories"`;
     }
 
     // Default responses
@@ -210,20 +226,22 @@ Try asking: "How many items are in Frontend?" or "Compare my categories"`
         selectedCategories.size === 0 ? "all" : selectedCategories.size
       } categories, what specific aspect would you like to explore?`,
       `I can see you have ${
-        selectedCategories.size === 0 ? "all categories" : Array.from(selectedCategories).join(", ")
+        selectedCategories.size === 0
+          ? "all categories"
+          : Array.from(selectedCategories).join(", ")
       } selected. What would you like to know about these categories?`,
       `Your current data includes ${totalItems} items. Try asking about counts, comparisons, or specific categories!`,
-    ]
+    ];
 
-    return responses[Math.floor(Math.random() * responses.length)]
-  }
+    return responses[Math.floor(Math.random() * responses.length)];
+  };
 
   const handleSendMessage = async (message: string = inputValue.trim()) => {
-    if (!message) return
+    if (!message) return;
 
     // Mark that user has sent a message
     if (!hasUserSentMessage) {
-      setHasUserSentMessage(true)
+      setHasUserSentMessage(true);
     }
 
     const userMessage: Message = {
@@ -231,47 +249,44 @@ Try asking: "How many items are in Frontend?" or "Compare my categories"`
       type: "user",
       content: message,
       timestamp: new Date(),
-    }
+    };
 
-    setMessages((prev) => [...prev, userMessage])
-    setInputValue("")
-    setIsTyping(true)
+    setMessages((prev) => [...prev, userMessage]);
+    setInputValue("");
+    setIsTyping(true);
 
     // Simulate typing delay
-    setTimeout(
-      () => {
-        const botResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          type: "bot",
-          content: generateResponse(userMessage.content),
-          timestamp: new Date(),
-        }
+    setTimeout(() => {
+      const botResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "bot",
+        content: generateResponse(userMessage.content),
+        timestamp: new Date(),
+      };
 
-        setMessages((prev) => [...prev, botResponse])
-        setIsTyping(false)
-      },
-      1000 + Math.random() * 1000,
-    ) // 1-2 second delay
-  }
+      setMessages((prev) => [...prev, botResponse]);
+      setIsTyping(false);
+    }, 1000 + Math.random() * 1000); // 1-2 second delay
+  };
 
   const handleQuickQuestion = (question: string) => {
-    handleSendMessage(question)
-  }
+    handleSendMessage(question);
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleSendMessage()
+      e.preventDefault();
+      handleSendMessage();
     }
-  }
+  };
 
   const toggleQuickQuestions = () => {
-    setShowQuickQuestions(!showQuickQuestions)
-  }
+    setShowQuickQuestions(!showQuickQuestions);
+  };
 
   const hideQuickQuestions = () => {
-    setShowQuickQuestions(false)
-  }
+    setShowQuickQuestions(false);
+  };
 
   return (
     <>
@@ -284,13 +299,17 @@ Try asking: "How many items are in Frontend?" or "Compare my categories"`
         aria-label="Toggle chatbot"
       >
         <MessageCircle size={24} />
-        {!isOpen && <span className="absolute -top-1 -left-1 bg-green-500 w-3 h-3 rounded-full animate-pulse"></span>}
+        {!isOpen && (
+          <span className="absolute -top-1 -left-1 bg-green-500 w-3 h-3 rounded-full animate-pulse"></span>
+        )}
       </button>
 
       {/* Chat Panel */}
       <div
         className={`fixed top-4 right-4 z-40 bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl shadow-2xl transition-all duration-300 ${
-          isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
+          isOpen
+            ? "translate-x-0 opacity-100"
+            : "translate-x-full opacity-0 pointer-events-none"
         }`}
         style={{ width: "380px", height: "calc(100vh - 32px)" }}
       >
@@ -304,7 +323,9 @@ Try asking: "How many items are in Frontend?" or "Compare my categories"`
               <div>
                 <h3 className="font-semibold text-gray-800">Data Assistant</h3>
                 <p className="text-xs text-gray-500">
-                  {selectedCategories.size === 0 ? "All categories" : `${selectedCategories.size} categories selected`}
+                  {selectedCategories.size === 0
+                    ? "All categories"
+                    : `${selectedCategories.size} categories selected`}
                 </p>
               </div>
             </div>
@@ -317,8 +338,16 @@ Try asking: "How many items are in Frontend?" or "Compare my categories"`
                     ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
                     : "bg-gray-100 text-gray-400 hover:bg-gray-200"
                 }`}
-                title={showQuickQuestions ? "Hide quick questions" : "Show quick questions"}
-                aria-label={showQuickQuestions ? "Hide quick questions" : "Show quick questions"}
+                title={
+                  showQuickQuestions
+                    ? "Hide quick questions"
+                    : "Show quick questions"
+                }
+                aria-label={
+                  showQuickQuestions
+                    ? "Hide quick questions"
+                    : "Show quick questions"
+                }
               >
                 {showQuickQuestions ? <ZapOff size={16} /> : <Zap size={16} />}
               </button>
@@ -335,19 +364,47 @@ Try asking: "How many items are in Frontend?" or "Compare my categories"`
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                key={message.id}
+                className={`flex ${
+                  message.type === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
                 <div
                   className={`max-w-[80%] rounded-lg p-3 ${
-                    message.type === "user" ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-800"
+                    message.type === "user"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-100 text-gray-800"
                   }`}
                 >
                   <div className="flex items-start space-x-2">
-                    {message.type === "bot" && <Bot size={16} className="text-blue-500 mt-0.5 flex-shrink-0" />}
-                    {message.type === "user" && <User size={16} className="text-white mt-0.5 flex-shrink-0" />}
+                    {message.type === "bot" && (
+                      <Bot
+                        size={16}
+                        className="text-blue-500 mt-0.5 flex-shrink-0"
+                      />
+                    )}
+                    {message.type === "user" && (
+                      <User
+                        size={16}
+                        className="text-white mt-0.5 flex-shrink-0"
+                      />
+                    )}
                     <div className="flex-1">
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      <p className={`text-xs mt-1 ${message.type === "user" ? "text-blue-100" : "text-gray-500"}`}>
-                        {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      <p className="text-sm whitespace-pre-wrap">
+                        {message.content}
+                      </p>
+                      <p
+                        className={`text-xs mt-1 ${
+                          message.type === "user"
+                            ? "text-blue-100"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </p>
                     </div>
                   </div>
@@ -435,7 +492,12 @@ Try asking: "How many items are in Frontend?" or "Compare my categories"`
       </div>
 
       {/* Backdrop */}
-      {isOpen && <div className="fixed inset-0 bg-black/10 z-30" onClick={() => setIsOpen(false)} />}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/10 z-30"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
 
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
@@ -454,7 +516,7 @@ Try asking: "How many items are in Frontend?" or "Compare my categories"`
         }
       `}</style>
     </>
-  )
-}
+  );
+};
 
-export default Chatbot
+export default Chatbot;

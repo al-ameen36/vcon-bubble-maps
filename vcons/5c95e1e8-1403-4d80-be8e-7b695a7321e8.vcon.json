@@ -118,32 +118,37 @@
             }
         },
         {
-            "interaction_duration": 76,
-            "number_of_participants": 2,
-            "number_of_messages": 12,
-            "sentiment": {
-                "type": "positive",
-                "score": 0.82,
-                "summary": "The customer reported missing artworks in their online gallery and felt anxious. The agent empathetically verified the account, identified a back-end cataloging error, and corrected it. The customer was relieved and satisfied with the prompt fix."
-            },
-            "keywords": [
-                "data management",
-                "artworks",
-                "cataloging",
-                "public gallery",
-                "discrepancy",
-                "Artistic Visions Gallery",
-                "account verification"
-            ],
-            "issues_raised": [
-                "Customer reported that the latest artworks they uploaded were not correctly cataloged and were missing from their public gallery."
-            ],
-            "resolution_quality": {
-                "score": 0.9,
-                "message": "The agent quickly located the data discrepancy in the back-end, corrected the catalog, and confirmed resolution with the customer, ensuring clarity and reassurance.",
-                "improvement": "Sending a follow-up confirmation email once the fix is applied could further reassure the customer and prevent similar issues."
-            },
-            "category": "Data Management Issue"
+            "type": "json_analysis",
+            "vendor": "openai",
+            "encoding": "none",
+            "body": {
+                "interaction_duration": 76,
+                "number_of_participants": 2,
+                "number_of_messages": 12,
+                "sentiment": {
+                    "type": "positive",
+                    "score": 0.82,
+                    "summary": "The customer reported missing artworks in their online gallery and felt anxious. The agent empathetically verified the account, identified a back-end cataloging error, and corrected it. The customer was relieved and satisfied with the prompt fix."
+                },
+                "keywords": [
+                    "data management",
+                    "artworks",
+                    "cataloging",
+                    "public gallery",
+                    "discrepancy",
+                    "Artistic Visions Gallery",
+                    "account verification"
+                ],
+                "issues_raised": [
+                    "Customer reported that the latest artworks they uploaded were not correctly cataloged and were missing from their public gallery."
+                ],
+                "resolution_quality": {
+                    "score": 0.9,
+                    "message": "The agent quickly located the data discrepancy in the back-end, corrected the catalog, and confirmed resolution with the customer, ensuring clarity and reassurance.",
+                    "improvement": "Sending a follow-up confirmation email once the fix is applied could further reassure the customer and prevent similar issues."
+                },
+                "category": "Data Management Issue"
+            }
         }
     ]
 }
