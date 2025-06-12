@@ -17,6 +17,11 @@ import {
   ZapOff,
 } from "lucide-react";
 import { Doc } from "@/convex/_generated/dataModel";
+import { useAction, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { v4 as uuidv4 } from "uuid";
+import { useThreadMessages, toUIMessages } from "@convex-dev/agent/react";
+import Thread from "./threads";
 
 interface Message {
   id: string;
@@ -42,21 +47,16 @@ const Chatbot: React.FC<ChatbotProps> = ({
   selectedCategories,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      type: "bot",
-      content:
-        "Hi! I can help you analyze the items in your selected categories. Ask me anything about the data!",
-      timestamp: new Date(),
-    },
-  ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showQuickQuestions, setShowQuickQuestions] = useState(true);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const createThread = useMutation(api.agents.agent.createThread);
+  const sendMessage = useAction(api.agents.agent.continueThread);
+  const [userId, setUserId] = useState<string>("");
+  const [threadId, setThreadId] = useState<string>("");
 
   // Define quick questions
   const quickQuestions: QuickQuestion[] = [
@@ -96,9 +96,47 @@ const Chatbot: React.FC<ChatbotProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // save thread id to localstorage
+  const generateUUID = () => {
+    return uuidv4();
+  };
+
+  const handleCreateUserId = () => {
+    const id = generateUUID();
+    setUserId(id);
+    localStorage.setItem("userId", id);
+    return id;
+  };
+
+  const getUserId = () => {
+    if (userId) return userId;
+    const id = localStorage.getItem("userId");
+    return id ? id : null;
+  };
+
+  const handleUpdateThreadId = (threadId: string) => {
+    setThreadId(threadId);
+    localStorage.setItem("threadId", threadId);
+  };
+
+  const getThreadId = () => {
+    if (threadId) return threadId;
+    const id = localStorage.getItem("threadId");
+    return id ? id : null;
+  };
+
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const id = getUserId();
+    if (!id) {
+      const newUserId = handleCreateUserId();
+      createThread({ userId: newUserId }).then((thread) => {
+        handleUpdateThreadId(thread.threadId);
+      });
+    } else setUserId(id);
+
+    const tid = getThreadId();
+    if (tid) setThreadId(tid);
+  }, []);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -106,7 +144,6 @@ const Chatbot: React.FC<ChatbotProps> = ({
     }
   }, [isOpen]);
 
-  // Auto-hide quick questions after user sends first message
   useEffect(() => {
     if (hasUserSentMessage && showQuickQuestions) {
       const timer = setTimeout(() => {
@@ -116,157 +153,19 @@ const Chatbot: React.FC<ChatbotProps> = ({
     }
   }, [hasUserSentMessage, showQuickQuestions]);
 
-  const generateResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase();
-    const categories = Array.from(selectedCategories);
-    const totalItems = filteredItems.length;
-
-    // Get category counts
-    const categoryCounts = filteredItems.reduce((acc, item) => {
-      acc[item.analysis?.[1].body.category] =
-        (acc[item.analysis?.[1].body.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    // Simple response logic based on keywords
-    if (
-      lowerMessage.includes("how many") ||
-      lowerMessage.includes("count") ||
-      lowerMessage.includes("total items")
-    ) {
-      if (lowerMessage.includes("total")) {
-        return `You currently have ${totalItems} items selected across ${
-          selectedCategories.size === 0 ? "all" : selectedCategories.size
-        } categories.`;
-      }
-      const categoryBreakdown = Object.entries(categoryCounts)
-        .map(([cat, count]) => `${cat}: ${count} items`)
-        .join(", ");
-      return `Here's the breakdown: ${categoryBreakdown}`;
-    }
-
-    if (
-      lowerMessage.includes("categories") ||
-      lowerMessage.includes("category") ||
-      lowerMessage.includes("list all categories")
-    ) {
-      if (categories.length === 0) {
-        const allCategories = Object.keys(categoryCounts).join(", ");
-        return `All categories are currently selected: ${allCategories}`;
-      }
-      return `You're currently viewing: ${categories.join(
-        ", "
-      )}. These categories contain ${totalItems} items total.`;
-    }
-
-    if (
-      lowerMessage.includes("largest") ||
-      lowerMessage.includes("biggest") ||
-      lowerMessage.includes("what's the largest category")
-    ) {
-      const largest = Object.entries(categoryCounts).sort(
-        (a, b) => b[1] - a[1]
-      )[0];
-      return largest
-        ? `The largest category is "${largest[0]}" with ${largest[1]} items.`
-        : "No categories selected.";
-    }
-
-    if (lowerMessage.includes("smallest") || lowerMessage.includes("least")) {
-      const smallest = Object.entries(categoryCounts).sort(
-        (a, b) => a[1] - b[1]
-      )[0];
-      return smallest
-        ? `The smallest category is "${smallest[0]}" with ${smallest[1]} items.`
-        : "No categories selected.";
-    }
-
-    if (lowerMessage.includes("items") && lowerMessage.includes("in")) {
-      const categoryMatch = categories.find((cat) =>
-        lowerMessage.includes(cat.toLowerCase())
-      );
-      if (categoryMatch) {
-        const categoryItems = filteredItems.filter(
-          (item) => item.analysis?.[1].body.category === categoryMatch
-        );
-        const itemNames = categoryItems.join(", ");
-        return `Items in ${categoryMatch}: ${itemNames}`;
-      }
-    }
-
-    if (
-      lowerMessage.includes("compare") ||
-      lowerMessage.includes("compare all categories")
-    ) {
-      const allCategories = Object.keys(categoryCounts);
-      if (allCategories.length < 2) {
-        return "You need at least 2 categories to make comparisons.";
-      }
-      const comparison = Object.entries(categoryCounts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([cat, count]) => `${cat} (${count})`)
-        .join(" > ");
-      return `Category comparison by size: ${comparison}`;
-    }
-
-    if (lowerMessage.includes("help") || lowerMessage.includes("what can")) {
-      return `I can help you with:
-• Count items in categories
-• Compare category sizes
-• List items in specific categories
-• Find largest/smallest categories
-• Analyze your current selection
-
-Try asking: "How many items are in Frontend?" or "Compare my categories"`;
-    }
-
-    // Default responses
-    const responses = [
-      `Based on your current selection of ${totalItems} items across ${
-        selectedCategories.size === 0 ? "all" : selectedCategories.size
-      } categories, what specific aspect would you like to explore?`,
-      `I can see you have ${
-        selectedCategories.size === 0
-          ? "all categories"
-          : Array.from(selectedCategories).join(", ")
-      } selected. What would you like to know about these categories?`,
-      `Your current data includes ${totalItems} items. Try asking about counts, comparisons, or specific categories!`,
-    ];
-
-    return responses[Math.floor(Math.random() * responses.length)];
-  };
-
+  // Send message to Convex agent
   const handleSendMessage = async (message: string = inputValue.trim()) => {
-    if (!message) return;
+    if (!message || !threadId) return;
 
-    // Mark that user has sent a message
-    if (!hasUserSentMessage) {
-      setHasUserSentMessage(true);
-    }
+    if (!hasUserSentMessage) setHasUserSentMessage(true);
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: "user",
-      content: message,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsTyping(true);
 
-    // Simulate typing delay
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        type: "bot",
-        content: generateResponse(userMessage.content),
-        timestamp: new Date(),
-      };
+    // Send to Convex agent
+    await sendMessage({ threadId, prompt: message });
 
-      setMessages((prev) => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 1000); // 1-2 second delay
+    setIsTyping(false);
   };
 
   const handleQuickQuestion = (question: string) => {
@@ -363,54 +262,7 @@ Try asking: "How many items are in Frontend?" or "Compare my categories"`;
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${
-                  message.type === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    message.type === "user"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  <div className="flex items-start space-x-2">
-                    {message.type === "bot" && (
-                      <Bot
-                        size={16}
-                        className="text-blue-500 mt-0.5 flex-shrink-0"
-                      />
-                    )}
-                    {message.type === "user" && (
-                      <User
-                        size={16}
-                        className="text-white mt-0.5 flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <p className="text-sm whitespace-pre-wrap">
-                        {message.content}
-                      </p>
-                      <p
-                        className={`text-xs mt-1 ${
-                          message.type === "user"
-                            ? "text-blue-100"
-                            : "text-gray-500"
-                        }`}
-                      >
-                        {message.timestamp.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+            {threadId ? <Thread threadId={threadId} /> : null}
 
             {isTyping && (
               <div className="flex justify-start">
