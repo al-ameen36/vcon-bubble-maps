@@ -27,7 +27,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (results.length > 0 && selectedCategories.size === 0) {
-      if (selectedCategories.size === 0) return;
+      // if (selectedCategories.size === 0) return;
       const allCategories = new Set(
         results.map((item) => item.analysis?.[1].body.category)
       );
